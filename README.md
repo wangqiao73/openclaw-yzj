@@ -23,7 +23,58 @@ openclaw plugins enable yzj
 openclaw gateway restart
 ```
 
-### 方式 B：本地开发（link）
+### 方式 B：从 GitHub 安装
+
+**方法 1：克隆仓库**
+
+```bash
+# 克隆仓库
+git clone https://github.com/JanonAI/openclaw-yzj.git
+
+# 安装插件
+openclaw plugins install ./openclaw-yzj
+openclaw plugins enable yzj
+openclaw gateway restart
+```
+
+**方法 2：下载 ZIP 压缩包**
+
+```bash
+# 下载压缩包
+wget https://github.com/JanonAI/openclaw-yzj/archive/refs/heads/main.zip
+
+# 安装插件（不需要解压）
+openclaw plugins install ./main.zip
+openclaw plugins enable yzj
+openclaw gateway restart
+```
+
+或者使用 curl：
+
+```bash
+# 下载压缩包
+curl -L https://github.com/JanonAI/openclaw-yzj/archive/refs/heads/main.zip -o main.zip
+
+# 安装插件（不需要解压）
+openclaw plugins install ./main.zip
+openclaw plugins enable yzj
+openclaw gateway restart
+```
+
+**安装特定版本**：
+
+```bash
+# 下载特定分支
+wget https://github.com/JanonAI/openclaw-yzj/archive/refs/heads/develop.zip
+
+# 下载特定标签/版本
+wget https://github.com/JanonAI/openclaw-yzj/archive/refs/tags/v2026.3.6.zip
+
+# 安装
+openclaw plugins install ./develop.zip  # 或 ./v2026.3.6.zip
+```
+
+### 方式 C：本地开发（link）
 
 ```bash
 openclaw plugins install --link extensions/yzj
