@@ -59,6 +59,11 @@
   "dependencies": {
     "zod": "^4.3.6"
   },
+  "files": [
+    "index.ts",
+    "src/**/*",
+    "package.json"
+  ],
   "exports": {
     ".": {
       "types": "./index.ts",

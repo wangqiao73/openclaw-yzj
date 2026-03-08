@@ -2,6 +2,8 @@
 
 云之家（YunZhiJia）群组对话机器人通道插件，通过 HTTP API + Webhook 实现双向消息通信。
 
+> 📘 **完整教程**：查看 [云之家集成教程](./docs/tutorial.md) 了解如何在公有云上部署 OpenClaw 并集成云之家机器人。
+
 ## 功能特性
 
 - **HTTP API 集成**：通过云之家 API 发送消息
