@@ -154,33 +154,22 @@ async function startAgentForInbound(
   });
 
   // 分发 Agent 处理
-  // 累积所有 block 的内容为一条消息
-  let messageBuffer: string[] = [];
   await core.channel.reply.dispatchReplyWithBufferedBlockDispatcher({
     ctx: ctxPayload,
     cfg: config,
     dispatcherOptions: {
       deliver: async (payload) => {
-        // 累积每个 block 的文本，但不立即发送
         const text = core.channel.text.convertMarkdownTables(payload.text ?? '', tableMode);
-        if (text) {
-          messageBuffer.push(text);
-        }
+        await sendYZJMessage(target, operatorOpenid, text);
+        target.statusSink?.({ lastOutboundAt: Date.now() });
       },
       onError: (err, info) => {
-        const errorMsg = `抱歉，处理您的消息时遇到问题：${err instanceof Error ? err.message : String(err)}`;
+        const errorMsg = `抱歉,处理您的消息时遇到问题: ${err instanceof Error ? err.message : String(err)}`;
         target.runtime.error?.(`[${account.accountId}] yzj ${info.kind} reply failed: ${String(err)}`);
         sendYZJMessage(target, operatorOpenid, errorMsg);
       },
     },
   });
-  // dispatchReplyWithBufferedBlockDispatcher 返回后，所有 block 已处理完成
-  // 合并所有 block 的内容为一条消息
-  if (messageBuffer.length > 0) {
-    const fullMessage = messageBuffer.join('');
-    await sendYZJMessage(target, operatorOpenid, fullMessage);
-    target.statusSink?.({ lastOutboundAt: Date.now() });
-  }
 }
 
 const webhookTargets = new Map<string, YZJWebhookTarget[]>();
