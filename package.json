@@ -24,7 +24,6 @@
       "order": 90
     },
     "install": {
-      "npmSpec": "@openclaw/yzj",
       "localPath": "extensions/yzj",
       "defaultChoice": "npm"
     }
@@ -50,7 +49,6 @@
       "order": 90
     },
     "install": {
-      "npmSpec": "@openclaw/yzj",
       "localPath": "extensions/yzj",
       "defaultChoice": "npm"
     }

@@ -60,13 +60,13 @@ async function sendYZJMessage(target: YZJWebhookTarget, operatorOpenid: string, 
 
     if (!response.ok) {
       const errorText = await response.text();
-      target.runtime.error?.(`[yzj] 发送消息失败: HTTP ${response.status} - ${errorText}`);
+      target.runtime.error?.(`[yzj] 发送消息失败：HTTP ${response.status} - ${errorText}`);
     } else {
-      target.runtime.log?.(`[yzj] 消息已发送: ${text.slice(0, 50)}${text.length > 50 ? '...' : ''}`);
+      target.runtime.log?.(`[yzj] 消息已发送：${text.slice(0, 50)}${text.length > 50 ? '...' : ''}`);
     }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    target.runtime.error?.(`[yzj] 发送消息时发生错误: ${errorMsg}`);
+    target.runtime.error?.(`[yzj] 发送消息时发生错误：${errorMsg}`);
   }
 }
 
@@ -154,22 +154,33 @@ async function startAgentForInbound(
   });
 
   // 分发 Agent 处理
+  // 累积所有 block 的内容为一条消息
+  let messageBuffer: string[] = [];
   await core.channel.reply.dispatchReplyWithBufferedBlockDispatcher({
     ctx: ctxPayload,
     cfg: config,
     dispatcherOptions: {
       deliver: async (payload) => {
+        // 累积每个 block 的文本，但不立即发送
         const text = core.channel.text.convertMarkdownTables(payload.text ?? '', tableMode);
-        await sendYZJMessage(target, operatorOpenid, text);
-        target.statusSink?.({ lastOutboundAt: Date.now() });
+        if (text) {
+          messageBuffer.push(text);
+        }
       },
       onError: (err, info) => {
-        const errorMsg = `抱歉,处理您的消息时遇到问题: ${err instanceof Error ? err.message : String(err)}`;
+        const errorMsg = `抱歉，处理您的消息时遇到问题：${err instanceof Error ? err.message : String(err)}`;
         target.runtime.error?.(`[${account.accountId}] yzj ${info.kind} reply failed: ${String(err)}`);
         sendYZJMessage(target, operatorOpenid, errorMsg);
       },
     },
   });
+  // dispatchReplyWithBufferedBlockDispatcher 返回后，所有 block 已处理完成
+  // 合并所有 block 的内容为一条消息
+  if (messageBuffer.length > 0) {
+    const fullMessage = messageBuffer.join('');
+    await sendYZJMessage(target, operatorOpenid, fullMessage);
+    target.statusSink?.({ lastOutboundAt: Date.now() });
+  }
 }
 
 const webhookTargets = new Map<string, YZJWebhookTarget[]>();
@@ -344,7 +355,7 @@ export async function handleYZJWebhookRequest(
       const errorMsg = err instanceof Error ? err.message : String(err);
       enrichedTarget.runtime.error?.(`[${firstTarget.account.accountId}] yzj agent failed: ${errorMsg}`);
       // 发送错误提示给用户
-      sendYZJMessage(enrichedTarget, msg.operatorOpenid, `抱歉，处理您的消息时遇到问题: ${errorMsg}`);
+      sendYZJMessage(enrichedTarget, msg.operatorOpenid, `抱歉，处理您的消息时遇到问题：${errorMsg}`);
     });
   }
 
