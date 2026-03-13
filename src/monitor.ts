@@ -27,7 +27,7 @@ type YZJWebhookTarget = {
 /**
  * 发送消息到 YZJ Robot
  */
-async function sendYZJMessage(target: YZJWebhookTarget, operatorOpenid: string, text: string): Promise<void> {
+async function sendYZJMessage(target: YZJWebhookTarget, operatorOpenid: string, text: string, replyData: any): Promise<void> {
   const { account } = target;
   const sendMsgUrl = account.sendMsgUrl;
 
@@ -48,6 +48,11 @@ async function sendYZJMessage(target: YZJWebhookTarget, operatorOpenid: string, 
         type: "openIds",
         values: [operatorOpenid]
       });
+    }
+
+    if (replyData) {
+      payload['param'] = replyData;
+      payload['paramType'] = 3;
     }
 
     const response = await fetch(sendMsgUrl, {
@@ -84,6 +89,18 @@ async function startAgentForInbound(
   const content = msg.content?.trim() || '';
   const robotId = msg.robotId?.trim() || 'unknown';
   const chatId = robotId;
+  const msgId = msg.msgId?.trim() || '';
+
+  let replyData = undefined;
+  if (msgId.length > 0) {
+    replyData ={
+      "replyMsgId": msgId,
+      "replyTitle": "",
+      "isReference": true,
+      "replySummary": content,
+      "replyPersonName": operatorName
+    }
+  }
 
   // 解析 Agent 路由
   const route = core.channel.routing.resolveAgentRoute({
@@ -154,22 +171,43 @@ async function startAgentForInbound(
   });
 
   // 分发 Agent 处理
+  // 累积所有 block 的内容为一条消息
+  let messageBuffer: string[] = [];
   await core.channel.reply.dispatchReplyWithBufferedBlockDispatcher({
     ctx: ctxPayload,
     cfg: config,
     dispatcherOptions: {
-      deliver: async (payload) => {
+      deliver: (payload) => {
         const text = core.channel.text.convertMarkdownTables(payload.text ?? '', tableMode);
-        await sendYZJMessage(target, operatorOpenid, text);
-        target.statusSink?.({ lastOutboundAt: Date.now() });
+        if (text) {
+          messageBuffer.push(text);
+        }
+        let lenText = 0;
+        for (const str of messageBuffer) {
+          lenText = lenText + str.length;
+        }
+        if (lenText > 20) {
+          const fullMessage = messageBuffer.join('');
+          messageBuffer = [];
+          sendYZJMessage(target, operatorOpenid, fullMessage, replyData);
+          target.statusSink?.({ lastOutboundAt: Date.now() });
+        }
       },
       onError: (err, info) => {
+        messageBuffer = [];
         const errorMsg = `抱歉,处理您的消息时遇到问题: ${err instanceof Error ? err.message : String(err)}`;
         target.runtime.error?.(`[${account.accountId}] yzj ${info.kind} reply failed: ${String(err)}`);
-        sendYZJMessage(target, operatorOpenid, errorMsg);
+        sendYZJMessage(target, operatorOpenid, errorMsg, replyData);
       },
     },
   });
+  // dispatchReplyWithBufferedBlockDispatcher 返回后，所有 block 已处理完成
+  // 合并所有 block 的内容为一条消息
+  if (messageBuffer.length > 0) {
+    const fullMessage = messageBuffer.join('');
+    await sendYZJMessage(target, operatorOpenid, fullMessage, replyData);
+    target.statusSink?.({ lastOutboundAt: Date.now() });
+  }
 }
 
 const webhookTargets = new Map<string, YZJWebhookTarget[]>();
@@ -344,7 +382,7 @@ export async function handleYZJWebhookRequest(
       const errorMsg = err instanceof Error ? err.message : String(err);
       enrichedTarget.runtime.error?.(`[${firstTarget.account.accountId}] yzj agent failed: ${errorMsg}`);
       // 发送错误提示给用户
-      sendYZJMessage(enrichedTarget, msg.operatorOpenid, `抱歉，处理您的消息时遇到问题：${errorMsg}`);
+      sendYZJMessage(enrichedTarget, msg.operatorOpenid, `抱歉，处理您的消息时遇到问题：${errorMsg}`, undefined);
     });
   }
 
