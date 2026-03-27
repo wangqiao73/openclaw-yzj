@@ -284,14 +284,14 @@ export const yzjPlugin: ChannelPlugin<ResolvedYZJAccount> = {
             running: false,
             configured: true,
             lastError: errorMessage,
-            webhookPath: account.webhookPath ?? "/yzj/webhook",
+            webhookPath: account.webhookPath ?? `/yzj/webhook/${account.accountId}`,
           });
           await waitForAbortSignal(ctx.abortSignal);
           return;
         }
       }
 
-      const path = (account.webhookPath ?? "/yzj/webhook").trim();
+      const path = (account.webhookPath ?? `/yzj/webhook/${account.accountId}`).trim();
       const logger = {
         info: (message: string) => ctx.log?.info?.(message),
         warn: (message: string) => ctx.log?.warn?.(message),

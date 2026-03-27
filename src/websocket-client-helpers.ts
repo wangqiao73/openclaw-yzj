@@ -22,6 +22,7 @@ type BusinessMessage = {
   time: number;
   msgId: string;
   content: string;
+  groupType: number;
 };
 
 type ControlResult = {
@@ -57,24 +58,21 @@ export function classifyWebSocketPayload(payload: unknown): ControlResult | Disp
   const nestedBusinessMessage = normalizeBusinessEnvelope(record);
   if (nestedBusinessMessage) return { kind: "dispatch", message: nestedBusinessMessage };
 
+
   const cmd = typeof record.cmd === "string" ? record.cmd.trim().toLowerCase() : "";
   const type = typeof record.type === "string" ? record.type.trim().toLowerCase() : "";
   const event = typeof record.event === "string" ? record.event.trim().toLowerCase() : "";
   const controlName = cmd || type || event;
 
-  if (controlName === "auth") return { kind: "control", reason: "auth" };
-  if (controlName === "message" || controlName === "messageread") {
-    return { kind: "control", reason: typeof record.cmd === "string" ? record.cmd : controlName };
-  }
-  if (controlName === "ping" || controlName === "pong" || controlName === "ack" || controlName === "close") {
-    return { kind: "control", reason: controlName };
-  }
-
   if (cmd === "directpush" || type === "msgchg") {
     const ack = record.needAck === true && typeof record.seq === "number"
-      ? JSON.stringify({ cmd: "ack", seq: record.seq })
-      : undefined;
+        ? JSON.stringify({ cmd: "ack", seq: record.seq })
+        : undefined;
     return { kind: "control", reason: "directPush", ...(ack ? { ack } : {}) };
+  }
+
+  if (controlName !== "" ) {
+    return {kind: "control", reason: controlName};
   }
 
   return { kind: "invalid" };
@@ -106,5 +104,6 @@ function normalizeBusinessMessage(record: Record<string, unknown>): BusinessMess
     time: record.time,
     msgId: record.msgId,
     content: record.content,
+    groupType: typeof record.groupType === "number" ? record.groupType : 0,
   };
 }

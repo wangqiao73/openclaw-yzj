@@ -21,12 +21,12 @@ function listConfiguredAccountIds(cfg: OpenclawConfig): string[] {
 
 /**
  * 列出所有 YZJ 账户ID
- * 如果没有配置账户，则返回默认账户ID
+ * 始终包含默认账户ID，同时包含所有配置的账户ID
  */
 export function listYZJAccountIds(cfg: OpenclawConfig): string[] {
   const ids = listConfiguredAccountIds(cfg);
-  if (ids.length === 0) return [DEFAULT_ACCOUNT_ID];
-  return ids.sort((a, b) => a.localeCompare(b));
+  const allIds = new Set([DEFAULT_ACCOUNT_ID, ...ids]);
+  return Array.from(allIds).sort((a, b) => a.localeCompare(b));
 }
 
 /**
@@ -49,7 +49,14 @@ function resolveAccountConfig(
 ): YZJAccountConfig | undefined {
   const accounts = (cfg.channels?.yzj as YZJConfig | undefined)?.accounts;
   if (!accounts || typeof accounts !== 'object') return undefined;
-  return accounts[accountId] as YZJAccountConfig | undefined;
+
+  const lowerCaseAccountId = accountId.toLowerCase();
+  for (const key of Object.keys(accounts)) {
+    if (key.toLowerCase() === lowerCaseAccountId) {
+      return accounts[key] as YZJAccountConfig | undefined;
+    }
+  }
+  return undefined;
 }
 
 /**
@@ -76,7 +83,7 @@ export function resolveYZJAccount(params: {
   const enabled = baseEnabled && merged.enabled !== false;
 
   const sendMsgUrl = merged.sendMsgUrl?.trim() || '';
-  const webhookPath = merged.webhookPath?.trim() || '/yzj/webhook';
+  const webhookPath = merged.webhookPath?.trim() || `/yzj/webhook/${accountId}`;
   const timeout = merged.timeout ?? 10000;
   const inboundMode = resolveInboundMode(merged, params.cfg.channels?.yzj as YZJConfig | undefined);
   const configured = Boolean(sendMsgUrl);

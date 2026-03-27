@@ -169,6 +169,9 @@ export class YZJWebSocketClient {
     const classified = classifyWebSocketPayload(payload);
     if (classified.kind === "control") {
       this.handleControlPayload(payload);
+      if (classified.reason === "auth") {
+        this.logger.warn?.(`[${this.target.account.accountId}] yzj websocket auth success`);
+      }
       if (classified.ack && this.socket?.readyState === 1) {
         this.socket.send(classified.ack);
       }
@@ -221,7 +224,7 @@ export class YZJWebSocketClient {
 
     try {
       if (typeof socket.ping === "function") socket.ping();
-      else socket.send(JSON.stringify({ type: "ping" }));
+      else socket.send(JSON.stringify({ cmd: "ping" }));
       // logInfo(this.logger, `[${this.target.account.accountId}] yzj websocket heartbeat sent`);
     } catch (error) {
       this.scheduleReconnect(`websocket heartbeat failed: ${error instanceof Error ? error.message : String(error)}`);

@@ -118,6 +118,9 @@ async function startAgentForInbound(
   const robotId = msg.robotId?.trim() || "unknown";
   const chatId = robotId;
   const msgId = msg.msgId?.trim() || "";
+  const groupType = msg.groupType || 0;
+
+  const notifyOpenid = groupType===3 ? "" : operatorOpenid;
 
   let replyData = undefined;
   if (msgId.length > 0) {
@@ -139,7 +142,7 @@ async function startAgentForInbound(
 
   logInfo(
     target.runtime,
-    `[yzj] starting ${source} agent processing (agentId=${route.agentId}, peerId=${chatId}) operatorOpenid=${operatorOpenid} content="${content.slice(0, 50)}${content.length > 50 ? "..." : ""}"`,
+    `[yzj] starting ${source} agent processing (agentId=${route.agentId}, peerId=${chatId}) operatorOpenid=${operatorOpenid} groupType=${groupType} content="${content.slice(0, 50)}${content.length > 50 ? "..." : ""}"`,
   );
 
   const storePath = core.channel.session.resolveStorePath(config.session?.store, {
@@ -206,20 +209,20 @@ async function startAgentForInbound(
         if (length > 20) {
           const fullMessage = messageBuffer.join("");
           messageBuffer = [];
-          void sendYZJMessage(target, operatorOpenid, fullMessage, replyData);
+          void sendYZJMessage(target, notifyOpenid, fullMessage, replyData);
         }
       },
       onError: (err: unknown, info: { kind?: string }) => {
         messageBuffer = [];
         const errorMsg = `抱歉,处理您的消息时遇到问题: ${err instanceof Error ? err.message : String(err)}`;
         target.runtime.error?.(`[${account.accountId}] yzj ${info.kind ?? "reply"} reply failed: ${String(err)}`);
-        void sendYZJMessage(target, operatorOpenid, errorMsg, replyData);
+        void sendYZJMessage(target, notifyOpenid, errorMsg, replyData);
       },
     },
   });
 
   if (messageBuffer.length > 0) {
     const fullMessage = messageBuffer.join("");
-    await sendYZJMessage(target, operatorOpenid, fullMessage, replyData);
+    await sendYZJMessage(target, notifyOpenid, fullMessage, replyData);
   }
 }

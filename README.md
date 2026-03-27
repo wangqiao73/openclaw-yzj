@@ -28,7 +28,25 @@ openclaw plugins enable yzj
 openclaw gateway restart
 ```
 
-### 方式 B：从 GitHub 安装
+### 方式 B：通过对话安装
+
+如果你已经能在 OpenClaw 的 WebUI 或终端里正常和助手对话，直接告诉 OpenClaw 这几句话就行，OpenClaw 就会自己帮你配好：
+
+```text
+1. 看一下这个地址：https://github.com/JanonAI/openclaw-yzj
+2. 配置 yzj channel，使用 websocket 模式
+3. webhook 地址是：https://www.yunzhijia.com/gateway/robot/webhook/send?yzjtype=0&yzjtoken=xxxxxxxxxxxxxxxxxx
+```
+
+如果希望它直接通过 ZIP 安装，也可以把第 1 句换成：
+
+```text
+1. 看一下这个地址：https://github.com/JanonAI/openclaw-yzj/archive/refs/heads/main.zip
+```
+
+如果当前环境禁止助手执行命令或访问网络，请改用下面的命令行安装方式。
+
+### 方式 C：从 GitHub 安装
 
 **方法 1：克隆仓库**
 
@@ -79,7 +97,7 @@ wget https://github.com/JanonAI/openclaw-yzj/archive/refs/tags/v2026.3.6.zip
 openclaw plugins install ./develop.zip  # 或 ./v2026.3.6.zip
 ```
 
-### 方式 C：本地开发（link）
+### 方式 D：本地开发（link）
 
 ```bash
 openclaw plugins install --link extensions/yzj

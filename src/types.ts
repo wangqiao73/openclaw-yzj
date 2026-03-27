@@ -34,6 +34,8 @@ export interface YZJIncomingMessage {
   msgId: string;
   /** 消息内容 */
   content: string;
+  /** 群组类型 */
+  groupType: number;
 }
 
 /**
